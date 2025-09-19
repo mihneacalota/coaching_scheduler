@@ -1,0 +1,27 @@
+TABLE 1: Timeslots and Groups
++----------+----------------------------------+--------------------------------+---------------------------------+----------------------------------+-----------------+
+| Timeslot | Table 1                          | Table 2                        | Table 3                         | Table 4                          | Table 5         |
++----------+----------------------------------+--------------------------------+---------------------------------+----------------------------------+-----------------+
+| 1        | B2-G1 (Mathias, Davide, Zhenchi) | M11-G4 (Janet, Mihnea, Wessel) | Daantje (Stephan)               | Tijn (Steven, Tim)               | Thijmen (Jesse) |
+| 2        | B2-G2 (Steven, Tim)              | B2-G3 (Stephan, Tuan)          | B2-G4 (Jesse, Zhenchi)          | M11-G1 (Mathias, Mihnea, Wessel) | Floris (Janet)  |
+| 3        | B2-G5 (Janet, Zhenchi)           | PreM (Stephan, Tuan)           | M11-G2 (Jesse, Mihnea, Wessel)  |                                  |                 |
+| 4        | M11-G3 (Steven, Tim)             | Berend (M1.2) (Stephan)        | Oliver (M1.2) (Mathias, Davide) |                                  |                 |
+| 5        | Linde (Mathias, Davide)          | Belle (M1.2) (Stephan)         | Tatum (M1.2) (Jesse)            |                                  |                 |
++----------+----------------------------------+--------------------------------+---------------------------------+----------------------------------+-----------------+
+
+TABLE 2: Coaches per Timeslot
++---------+--------------------------+--------------------------+-------------------------+-------------------------+-----------------+
+| Coach   | Timeslot 1               | Timeslot 2               | Timeslot 3              | Timeslot 4              | Timeslot 5      |
++---------+--------------------------+--------------------------+-------------------------+-------------------------+-----------------+
+| Mathias | B2-G1 (Davide, Zhenchi)  | M11-G1 (Mihnea, Wessel)  |                         | Oliver (M1.2) (Davide)  | Linde (Davide)  |
+| Davide  | B2-G1 (Mathias, Zhenchi) |                          |                         | Oliver (M1.2) (Mathias) | Linde (Mathias) |
+| Zhenchi | B2-G1 (Mathias, Davide)  | B2-G4 (Jesse)            | B2-G5 (Janet)           |                         |                 |
+| Janet   | M11-G4 (Mihnea, Wessel)  | Floris ()                | B2-G5 (Zhenchi)         |                         |                 |
+| Mihnea  | M11-G4 (Janet, Wessel)   | M11-G1 (Mathias, Wessel) | M11-G2 (Jesse, Wessel)  |                         |                 |
+| Wessel  | M11-G4 (Janet, Mihnea)   | M11-G1 (Mathias, Mihnea) | M11-G2 (Jesse, Mihnea)  |                         |                 |
+| Stephan | Daantje ()               | B2-G3 (Tuan)             | PreM (Tuan)             | Berend (M1.2) ()        | Belle (M1.2) () |
+| Steven  | Tijn (Tim)               | B2-G2 (Tim)              |                         | M11-G3 (Tim)            |                 |
+| Tim     | Tijn (Steven)            | B2-G2 (Steven)           |                         | M11-G3 (Steven)         |                 |
+| Jesse   | Thijmen ()               | B2-G4 (Zhenchi)          | M11-G2 (Mihnea, Wessel) |                         | Tatum (M1.2) () |
+| Tuan    |                          | B2-G3 (Stephan)          | PreM (Stephan)          |                         |                 |
++---------+--------------------------+--------------------------+-------------------------+-------------------------+-----------------+
