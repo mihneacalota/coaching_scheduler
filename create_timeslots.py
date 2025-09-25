@@ -60,7 +60,7 @@ def color_graph_all_optimal(adjacency):
 
     def backtrack(i, coloring, max_color):
         nonlocal best_colors_used, all_solutions
-        if len(all_solutions) >= 50:  # Limit to 50 solutions
+        if len(all_solutions) >= 10000:  # Limit to 10000 solutions
             return
         if i == n:
             if max_color < best_colors_used:
