@@ -1,7 +1,8 @@
 import streamlit as st
 import csv
 import random
-from io import StringIO
+from io import StringIO, BytesIO
+from datetime import time
 
 # Import your functions from create_timeslots.py
 from create_timeslots import (
@@ -9,17 +10,20 @@ from create_timeslots import (
     make_dict_coaches,
     create_adjacency_group_graph,
     color_graph_all_optimal,
-    printer_functions
+    printer_functions,
+    generate_timeslot_labels,
+    export_pdf,
 )
 
-def display_timeslot_table_md(timeslots, dict_groups):
+def display_timeslot_table_md(timeslots, dict_groups, timeslot_labels=None):
     """Display Table 1: Timeslot view using Markdown table formatting."""
     max_tables = max(len(slot) for slot in timeslots)
     headers = ["Timeslot"] + [f"Table {i+1}" for i in range(max_tables)]
 
     rows = []
-    for i, slot in enumerate(timeslots, start=1):
-        row = [str(i)]
+    for i, slot in enumerate(timeslots):
+        label = timeslot_labels[i] if timeslot_labels else str(i + 1)
+        row = [label]
         for group in slot:
             coaches = [c for c in dict_groups[group].values() if c]
             row.append(f"{group} ({', '.join(coaches)})")
@@ -36,9 +40,12 @@ def display_timeslot_table_md(timeslots, dict_groups):
     st.markdown(md)
 
 
-def display_coach_table_md(timeslots, dict_coaches, dict_groups):
+def display_coach_table_md(timeslots, dict_coaches, dict_groups, timeslot_labels=None):
     """Display Table 2: Coach view using Markdown table formatting."""
-    headers = ["Coach"] + [f"Timeslot {i+1}" for i in range(len(timeslots))]
+    if timeslot_labels:
+        headers = ["Coach"] + list(timeslot_labels)
+    else:
+        headers = ["Coach"] + [f"Timeslot {i+1}" for i in range(len(timeslots))]
 
     rows = []
     for coach, groups in dict_coaches.items():
@@ -131,6 +138,23 @@ if uploaded_file:
                         st.session_state.restrictions.pop(g)
                         st.rerun()
 
+        st.markdown("---")
+        st.subheader("⏰ Timeslot Timing")
+
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            start_time = st.time_input("Start time", value=time(9, 0), key="start_time")
+        with col2:
+            end_time = st.time_input("End time (target)", value=time(12, 0), key="end_time")
+        with col3:
+            duration_minutes = st.number_input(
+                "Timeslot duration (min)", min_value=1, value=20, step=5, key="duration_minutes"
+            )
+        with col4:
+            buffer_minutes = st.number_input(
+                "Buffer between timeslots (min)", min_value=0, value=5, step=1, key="buffer_minutes"
+            )
+
     # ---------------- TAB 2 ----------------
     with tab2:
         if st.button("Run Script"):
@@ -165,5 +189,56 @@ if uploaded_file:
                     # Place in correct slot
                     timeslot_choice[fixed_slot - 1].append(group)
 
-            display_timeslot_table_md(timeslot_choice, updated_dict_groups)
-            display_coach_table_md(timeslot_choice, updated_dict_coaches, updated_dict_groups)
+            # Generate time labels for each timeslot based on Tab 1 settings
+            timeslot_labels, fits = generate_timeslot_labels(
+                start_time=st.session_state.start_time,
+                duration_minutes=st.session_state.duration_minutes,
+                buffer_minutes=st.session_state.buffer_minutes,
+                n_timeslots=len(timeslot_choice),
+                end_time=st.session_state.end_time,
+            )
+
+            if not fits:
+                st.warning(
+                    f"⚠️ {len(timeslot_choice)} timeslots at "
+                    f"{st.session_state.duration_minutes} min + "
+                    f"{st.session_state.buffer_minutes} min buffer don't fit between "
+                    f"{st.session_state.start_time.strftime('%H:%M')} and "
+                    f"{st.session_state.end_time.strftime('%H:%M')}. "
+                    f"Schedule runs to {timeslot_labels[-1].split('-')[1]} instead."
+                )
+
+            # Stash results in session state so the PDF download button
+            # (which triggers a rerun) doesn't lose the generated schedule
+            st.session_state.last_timeslot_choice = timeslot_choice
+            st.session_state.last_dict_coaches = updated_dict_coaches
+            st.session_state.last_dict_groups = updated_dict_groups
+            st.session_state.last_timeslot_labels = timeslot_labels
+
+        # Display + export whatever was last generated (persists across reruns)
+        if "last_timeslot_choice" in st.session_state:
+            timeslot_choice = st.session_state.last_timeslot_choice
+            updated_dict_coaches = st.session_state.last_dict_coaches
+            updated_dict_groups = st.session_state.last_dict_groups
+            timeslot_labels = st.session_state.last_timeslot_labels
+
+            display_timeslot_table_md(timeslot_choice, updated_dict_groups, timeslot_labels)
+            display_coach_table_md(timeslot_choice, updated_dict_coaches, updated_dict_groups, timeslot_labels)
+
+            st.markdown("---")
+            pdf_buffer = BytesIO()
+            export_pdf(
+                timeslot_choice,
+                updated_dict_coaches,
+                updated_dict_groups,
+                filename=pdf_buffer,
+                timeslot_labels=timeslot_labels,
+            )
+            pdf_buffer.seek(0)
+
+            st.download_button(
+                label="📄 Export tables as A4 PDF",
+                data=pdf_buffer,
+                file_name="coaching_schedule.pdf",
+                mime="application/pdf",
+            )
