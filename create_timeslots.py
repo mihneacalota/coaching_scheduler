@@ -222,16 +222,19 @@ def printer_functions(timeslots, dict_coaches, dict_groups, filename="Coaching.t
 
 
 # ---------------------------------------------------------------------------
-# PDF export - both tables stacked on a single A4 page
+# PDF export - both tables stacked on a single A4 page, with wrapping cells
 # ---------------------------------------------------------------------------
 
 def export_pdf(timeslots, dict_coaches, dict_groups, filename="schedule.pdf", timeslot_labels=None):
     """
     Render Table 1 (Timeslots and Groups) and Table 2 (Coaches per Timeslot)
-    stacked on a single A4 page and write them to `filename`.
+    stacked on a single A4 page and write them to `filename` (a path or a
+    file-like object such as io.BytesIO).
 
-    Font size auto-shrinks based on column/row counts so both tables fit
-    on one page regardless of how many groups/coaches/timeslots there are.
+    Every cell is rendered as a Paragraph so long content wraps onto
+    multiple lines within the cell instead of overflowing it. Font size
+    auto-shrinks based on column/row counts so both tables still fit on
+    one page as the roster grows.
     """
     headers1, rows1 = build_timeslot_rows(timeslots, dict_groups, timeslot_labels)
     headers2, rows2 = build_coach_rows(timeslots, dict_coaches, dict_groups, timeslot_labels)
@@ -239,32 +242,47 @@ def export_pdf(timeslots, dict_coaches, dict_groups, filename="schedule.pdf", ti
     page_width, page_height = A4
     margin = 12 * mm
     usable_width = page_width - 2 * margin
-    usable_height = page_height - 2 * margin
 
-    styles = getSampleStyleSheet()
-    title_style = styles["Heading2"]
+    base_styles = getSampleStyleSheet()
 
     # Pick a font size that scales down as content grows, so a large
     # roster still fits on one A4 page instead of overflowing.
     total_cols = max(len(headers1), len(headers2))
     total_rows = len(rows1) + len(rows2)
     base_font_size = 9
-    if total_cols > 8 or total_rows > 25:
-        base_font_size = 7
-    if total_cols > 12 or total_rows > 40:
-        base_font_size = 6
+    if total_cols > 8 or total_rows > 20:
+        base_font_size = 7.5
+    if total_cols > 12 or total_rows > 32:
+        base_font_size = 6.5
     base_font_size = max(base_font_size, 5)  # floor so text stays legible-ish
 
     def make_table(headers, rows, font_size):
         col_count = len(headers)
         col_width = usable_width / col_count
-        data = [headers] + rows
+
+        # Wrap every cell's text in a Paragraph so long content wraps onto
+        # multiple lines within the cell instead of exiting/overflowing it.
+        header_style = base_styles["Normal"].clone("HeaderCell")
+        header_style.fontName = "Helvetica-Bold"
+        header_style.fontSize = font_size
+        header_style.leading = font_size * 1.2
+        header_style.textColor = colors.white
+
+        body_style = base_styles["Normal"].clone("BodyCell")
+        body_style.fontName = "Helvetica"
+        body_style.fontSize = font_size
+        body_style.leading = font_size * 1.2
+
+        wrapped_header = [Paragraph(str(cell), header_style) for cell in headers]
+        wrapped_rows = [
+            [Paragraph(str(cell), body_style) for cell in row]
+            for row in rows
+        ]
+        data = [wrapped_header] + wrapped_rows
+
         table = Table(data, colWidths=[col_width] * col_count, repeatRows=1)
         table.setStyle(TableStyle([
-            ("FONTSIZE", (0, 0), (-1, -1), font_size),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2c3e50")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
             ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f2f2f2")]),
@@ -276,11 +294,11 @@ def export_pdf(timeslots, dict_coaches, dict_groups, filename="schedule.pdf", ti
         return table
 
     story = [
-        Paragraph("Table 1: Timeslots and Groups", title_style),
+        Paragraph("Table 1: Timeslots and Groups", base_styles["Heading2"]),
         Spacer(1, 4),
         make_table(headers1, rows1, base_font_size),
         Spacer(1, 14),
-        Paragraph("Table 2: Coaches per Timeslot", title_style),
+        Paragraph("Table 2: Coaches per Timeslot", base_styles["Heading2"]),
         Spacer(1, 4),
         make_table(headers2, rows2, base_font_size),
     ]
